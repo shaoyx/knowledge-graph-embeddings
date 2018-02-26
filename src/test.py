@@ -12,6 +12,7 @@ def test(args):
 
     # preparing data
     test_dat = TripletDataset.load(args.data, ent_vocab, rel_vocab)
+    graph = GraphDataset.load(args.knowledge, ent_vocab, rel_vocab)
 
     print('loading model...')
     if args.method == 'complex':
@@ -40,7 +41,7 @@ def test(args):
         evaluator.prepare_valid(test_dat)
     model = Model.load_model(args.model)
 
-    all_res = evaluator.run_all_matric(model, test_dat)
+    all_res = evaluator.run_all_matric(model, test_dat, graph)
     for metric in sorted(all_res.keys()):
         print('{:20s}: {}'.format(metric, all_res[metric]))
 
@@ -52,6 +53,7 @@ if __name__ == '__main__':
     p.add_argument('--ent', type=str, help='entity list')
     p.add_argument('--rel', type=str, help='relation list')
     p.add_argument('--data', type=str, help='test data')
+    p.add_argument('--knowledge', type=str, help='knowledge base')
     p.add_argument('--filtered', action='store_true', help='use filtered metric')
     p.add_argument('--graphall', type=str, help='all graph file for filtered evaluation')
 

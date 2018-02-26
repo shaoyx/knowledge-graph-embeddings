@@ -38,6 +38,10 @@ class BaseModel(object):
     def cal_triplet_scores(self, **kwargs):
         raise NotImplementedError
 
+    # Deep analysis on test cases.
+    def analyze(self, kb, subs, rels, objs):
+        raise NotImplementedError
+
     def zerograds(self):
         for param in self.params.values():
             param.clear()

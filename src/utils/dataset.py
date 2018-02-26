@@ -65,3 +65,38 @@ class Vocab(object):
             for word in f:
                 v.add(word.strip())
         return v
+
+class GraphDataset(object):
+    def __init__(self, v_size):
+        self.size = v_size
+        self.adj = [ [] for i in range(v_size) ]
+        self.inv_adj = [ [] for i in range(v_size) ]
+
+    def add_edge(self, h, r, t, is_inv = False):
+        if is_inv:
+            self.inv_adj[h].append((t, r))
+        else:
+            self.adj[h].append((t, r))
+
+    def size(self):
+        return self.size
+
+    def get_adj(self, vid):
+        return self.adj[vid]
+
+    def get_inv_adj(self, vid):
+        return self.inv_adj[vid]
+
+    @classmethod
+    def load(cls, data_path, ent_vocab, rel_vocab):
+        g = GraphDataset(len(ent_vocab))
+        with open(data_path) as f:
+            for line in f:
+                sub, rel, obj = line.strip().split('\t')
+                
+                # add original edge
+                g.add_edge(ent_vocab[sub], rel_vocab[rel], ent_vocab[obj])
+
+                # add inverse edge
+                g.add_edge(ent_vocab[obj], rel_vocab[rel], ent_vocab[sub], True)
+        return g

@@ -2,6 +2,7 @@
 from models.base_model import BaseModel
 from models.param import LookupParameter
 from utils.math_utils import *
+import queue
 
 
 class TransE(BaseModel):
@@ -116,3 +117,43 @@ class TransE(BaseModel):
 
     def pick_rel(self, rels):
         return self.params['r'].data[rels]
+
+    def analyze(self, kb, subs, rels, objs):
+        for idx in range(len(subs)):
+            sub = subs[idx]
+            rel = rels[idx]
+            obj = objs[idx]
+
+            sub_emb = self.pick_ent(sub)
+            rel_emb = self.pick_rel(rel)
+            obj_emb = self.pick_ent(obj)
+
+            # compute rank and top-1 relations
+            pred_rel = obj_emb - sub_emb
+            sim = np.sum((pred_rel-rel_emb)**2)
+
+            # do graph search
+            vis = [False for i in range(kb.size)]
+            vis[sub] = True
+            self.dfs_search([sub], [0. for i in range(self.dim)], vis, kb, obj, sub_emb, rel_emb,obj_emb)
+
+    def dfs_search(self, path, path_emb, vis, kb, o, sub_emb, rel_emb, obj_emb):
+        cur_v = path[-1]
+        if cur_v == o:
+            # find a path between sub and obj
+            print('path: {}, rel_sim: {}, triple_score: {}'.format(path, (rel_emb-path_emb)**2), (sub_emb+path_emb-obj_emb))
+            return
+
+        for nbr in kb.get_adj(cur_v):
+            vis[nbr[0]] = True
+            path.append(nbr[0])
+            self.dfs(path, path_emb+self.pick_rel(nbr[1]), vis, kb, obj, rel_emb)
+            path.delete(-1)
+            vis[nbr] = False
+
+        for nbr in kb.get_inv_adj(cur_v):
+            vis[nbr[0]] = True
+            path.append(nbr[0])
+            self.dfs(path, path_emb-self.pick_rel(nbr[1]), vis, kb, obj, rel_emb)
+            path.delete(-1)
+            vis[nbr] = False
