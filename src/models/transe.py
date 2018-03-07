@@ -129,31 +129,61 @@ class TransE(BaseModel):
             obj_emb = self.pick_ent(obj)
 
             # compute rank and top-1 relations
-            pred_rel = obj_emb - sub_emb
-            sim = np.sum((pred_rel-rel_emb)**2)
+            pred_rel_emb = obj_emb - sub_emb
+            sim = np.sum((pred_rel_emb - rel_emb)**2)
+            best_rel, best_rel_score, rank = self.search_rel_by_emb(pred_rel_emb, sim)
+            print("true_rel:{0}, true2pred_sim: {1:.6f}, rank: {2}, best_rel: {3}, best_rel_score: {4:.6f}".format(rel, sim, rank, best_rel, best_rel_score))
 
             # do graph search
             vis = [False for i in range(kb.size)]
             vis[sub] = True
-            self.dfs_search([sub], [0. for i in range(self.dim)], vis, kb, obj, sub_emb, rel_emb,obj_emb)
+            self.dfs_search([(sub, 'STR')], [0. for i in range(self.dim)], vis, kb, obj, sub_emb, rel_emb, obj_emb, 10)
 
-    def dfs_search(self, path, path_emb, vis, kb, o, sub_emb, rel_emb, obj_emb):
-        cur_v = path[-1]
-        if cur_v == o:
+    def search_rel_by_emb(self, pred_rel_emb, rel_score):
+        rel_embs = self.params['r'].data
+        best_rel = -1
+        best_rel_score = np.inf
+        rank = 1
+        for rel in range(len(rel_embs)):
+            score = np.sum((rel_embs[rel] - pred_rel_emb)**2)
+            if score < best_rel_score:
+                best_rel_score = score
+                best_rel = rel 
+            if rel_score > score:
+                rank = rank+1
+        return best_rel, best_rel_score, rank
+
+
+    # search path between the pair (sub, obj).
+    def dfs_search(self, path, path_emb, vis, kb, obj, sub_emb, rel_emb, obj_emb, max_depth):
+        cur_v = path[-1][0]
+        if cur_v == obj:
             # find a path between sub and obj
-            print('path: {}, rel_sim: {}, triple_score: {}'.format(path, (rel_emb-path_emb)**2), (sub_emb+path_emb-obj_emb))
-            return
+            print("path2rel_sim: {1:.6f}, path2obj_score: {2:.6f}, path: {0}".format(path, np.sum((rel_emb-path_emb)**2), np.sum((sub_emb+path_emb-obj_emb)**2)))
+            return True
 
+        if len(path) > max_depth:
+            return False;
+        res = False
         for nbr in kb.get_adj(cur_v):
+            if vis[nbr[0]] == True:
+                continue
             vis[nbr[0]] = True
-            path.append(nbr[0])
-            self.dfs(path, path_emb+self.pick_rel(nbr[1]), vis, kb, obj, rel_emb)
-            path.delete(-1)
-            vis[nbr] = False
+            path.append((nbr[0], str(nbr[1])))
+            if self.dfs_search(path, path_emb+self.pick_rel(nbr[1]), vis, kb, obj, sub_emb, rel_emb, obj_emb, max_depth):
+                vis[nbr[0]] = False # If there is an valid path, we should set vis[nbr[0]] as False to revisited agian.
+                res = True
+            del path[-1]
+            #vis[nbr[0]] = False
 
         for nbr in kb.get_inv_adj(cur_v):
+            if vis[nbr[0]] == True:
+                continue
             vis[nbr[0]] = True
-            path.append(nbr[0])
-            self.dfs(path, path_emb-self.pick_rel(nbr[1]), vis, kb, obj, rel_emb)
-            path.delete(-1)
-            vis[nbr] = False
+            path.append((nbr[0],"inv_"+str(nbr[1])))
+            if self.dfs_search(path, path_emb-self.pick_rel(nbr[1]), vis, kb, obj, sub_emb, rel_emb, obj_emb, max_depth):
+                vis[nbr[0]] = False
+                res = True
+            del path[-1]
+            #vis[nbr[0]] = False
+        return res

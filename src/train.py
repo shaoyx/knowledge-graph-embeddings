@@ -13,7 +13,7 @@ from utils.dataset import TripletDataset, Vocab
 
 np.random.seed(46)
 DEFAULT_LOG_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                               '{}'.format(datetime.now().strftime('%Y%m%d_%H:%M')))
+                               '../log/{}'.format(datetime.now().strftime('%Y%m%d_%H:%M')))
 
 
 def train(args):
@@ -105,6 +105,19 @@ def train(args):
                         dim=args.dim,
                         cp_ratio=args.cp_ratio,
                         mode=args.mode)
+    elif args.method == 'randwalk':
+        from models.randwalk import RandWalk
+        logger.info('using random walk model to learning embedding unsupervisedly.')
+        model = RandWalk(n_entity=n_entity,
+                         n_relation=n_relation,
+                         knowledge_path=args.train,
+                         ent_vocab=ent_vocab, 
+                         rel_vocab=rel_vocab,
+                         dim=args.dim,
+                         output=args.log)
+        model.train()
+        model.save_model(os.path.join(args.log, model.__class__.__name__))
+        return
     else:
         raise NotImplementedError
 
@@ -142,7 +155,7 @@ if __name__ == '__main__':
     p.add_argument('--valid', type=str, help='validation data')
 
     # model
-    p.add_argument('--method', default='complex', type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy"]')
+    p.add_argument('--method', default='complex', type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy", "randwalk"]')
     p.add_argument('--epoch', default=100, type=int, help='number of epochs')
     p.add_argument('--batch', default=128, type=int, help='batch size')
     p.add_argument('--lr', default=0.001, type=float, help='learning rate')

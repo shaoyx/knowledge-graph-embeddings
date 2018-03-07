@@ -12,7 +12,8 @@ def test(args):
 
     # preparing data
     test_dat = TripletDataset.load(args.data, ent_vocab, rel_vocab)
-    graph = GraphDataset.load(args.knowledge, ent_vocab, rel_vocab)
+    # graph = GraphDataset.load(args.knowledge, ent_vocab, rel_vocab)
+    graph = None
 
     print('loading model...')
     if args.method == 'complex':
@@ -27,6 +28,8 @@ def test(args):
         from models.rescal import RESCAL as Model
     elif args.method == 'analogy':
         from models.analogy import ANALOGY as Model
+    elif args.method == 'randwalk':
+        from models.randwalk import RandWalk as Model
     else:
         raise NotImplementedError
 
@@ -40,6 +43,9 @@ def test(args):
     if args.filtered:
         evaluator.prepare_valid(test_dat)
     model = Model.load_model(args.model)
+
+    if args.method == 'randwalk':
+        model.load_wv_model(args.wv_model)
 
     all_res = evaluator.run_all_matric(model, test_dat, graph)
     for metric in sorted(all_res.keys()):
@@ -60,6 +66,7 @@ if __name__ == '__main__':
     # model
     p.add_argument('--method', default=None, type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy"]')
     p.add_argument('--model', type=str, help='trained model path')
+    p.add_argument('--wv-model', type=str, help='trained embedding with word2vec model')
 
     args = p.parse_args()
     test(args)
