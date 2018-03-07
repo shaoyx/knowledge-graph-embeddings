@@ -77,11 +77,11 @@ class RandWalk(BaseModel):
             target_emb = self.pick_ent(i)
             e2t = np.dot(ent_emb, target_emb)
             r2t = np.dot(rel_emb, target_emb)
-            score[i] = 0 - e2t - r2t
+            score[i] = e2t + r2t
             norm_ent = norm_ent + np.exp(e2t)
             norm_rel = norm_rel + np.exp(r2t)
-        score = score + np.log(norm_ent)
-        score = score + np.log(norm_rel)
+        score = score - np.log(norm_ent)
+        score = score - np.log(norm_rel)
         return score
     
     def load_wv_model(self, wv_model_path):
