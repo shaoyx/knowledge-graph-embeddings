@@ -30,6 +30,8 @@ def test(args):
         from models.analogy import ANALOGY as Model
     elif args.method == 'randwalk':
         from models.randwalk import RandWalk as Model
+    elif args.method == 'lr':
+        from models.lr import LogisticReg as Model
     else:
         raise NotImplementedError
 

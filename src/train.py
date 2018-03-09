@@ -118,6 +118,22 @@ def train(args):
         model.train()
         model.save_model(os.path.join(args.log, model.__class__.__name__))
         return
+    elif args.method == "lr":
+        from models.lr import LogisticReg
+        model = LogisticReg(n_entity=n_entity,
+                                  n_relation=n_relation,
+                                  train_path=args.train,
+                                  ent_vocab=ent_vocab, 
+                                  rel_vocab=rel_vocab,
+                                  dim=args.dim,
+                                  output=args.log,
+                                  wv_model_path=args.wv_model)
+        starttime = time() 
+        model.train()
+        endtime = time()
+        logger.info("lr model train time {.6f}".format(endtime - starttime))
+        model.save_model(os.path.join(args.log, model.__class__.__name__))
+        return
     else:
         raise NotImplementedError
 
@@ -175,7 +191,7 @@ if __name__ == '__main__':
     p.add_argument('--nbest', default=None, type=int, help='n-best for hits metric')
     p.add_argument('--filtered', action='store_true', help='use filtered metric')
     p.add_argument('--graphall', type=str, help='all graph file for filtered evaluation')
-
+    p.add_argument('--wv-model', type=str, help='trained embedding with word2vec model')
     # others
     p.add_argument('--log', default=DEFAULT_LOG_DIR, type=str, help='output log dir')
 
