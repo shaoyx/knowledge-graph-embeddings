@@ -51,6 +51,11 @@ class Evaluator(object):
             subs, rels, objs = samples[:, 0], samples[:, 1], samples[:, 2]
             ids = np.arange(start_id, start_id+len(samples))
             print("{}/{}".format(start_id, n_sample))
+            
+            rel_raw_scores = model.cal_rel_scores(subs, objs)
+            rel_raw_ranks = self.cal_rank(rel_raw_scores, rels)
+            for idx in range(len(rels)):
+                print('id:{}, prob:{:.6f}, rank:{}'.format(rels[idx],rel_raw_scores[idx][rels[idx]],rel_raw_ranks[idx]))
 
             # TODO: methods for deep analyze
             # model.analyze(knowledge_base, subs, rels, objs)
@@ -59,6 +64,8 @@ class Evaluator(object):
             # search objects
             raw_scores = model.cal_scores(subs, rels)
             raw_ranks = self.cal_rank(raw_scores, objs)
+            for idx in range(len(objs)):
+                print('id:{}, prob:{:.6f}, rank:{}'.format(objs[idx],raw_scores[idx][objs[idx]],raw_ranks[idx]))
             sum_rr_raw += sum(float(1/rank) for rank in raw_ranks)
             n_corr_h1_raw += sum(1 for rank in raw_ranks if rank <= 1)
             n_corr_h3_raw += sum(1 for rank in raw_ranks if rank <= 3)
@@ -75,6 +82,8 @@ class Evaluator(object):
             # search subjects
             raw_scores_inv = model.cal_scores_inv(rels, objs)
             raw_ranks_inv = self.cal_rank(raw_scores_inv, subs)
+            for idx in range(len(objs)):
+                print('id:{}, prob:{:.6f}, rank:{}'.format(objs[idx],raw_scores_inv[idx][objs[idx]], raw_ranks_inv[idx]))
             sum_rr_raw += sum(float(1/rank) for rank in raw_ranks_inv)
             n_corr_h1_raw += sum(1 for rank in raw_ranks_inv if rank <= 1)
             n_corr_h3_raw += sum(1 for rank in raw_ranks_inv if rank <= 3)

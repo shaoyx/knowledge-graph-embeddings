@@ -58,6 +58,14 @@ class LogisticReg(BaseModel):
         for i in range(_batchsize):
             score_mat[i] = self.predict(self.pick_ent(subs[i]), rels[i], 1)
         return score_mat
+    
+    def cal_rel_scores(self, subs, objs):
+        _batchsize = len(subs)
+        
+        score_mat = np.empty((_batchsize, self.n_relation))
+        for i in range(_batchsize):
+            score_mat[i] = self.predict(self.pick_ent(subs[i]), self.pick_ent(objs[i]), 0)
+        return score_mat
 
     def cal_scores_inv(self, rels, objs):
         _batchsize = len(objs)
@@ -82,13 +90,19 @@ class LogisticReg(BaseModel):
         elif task_type == -1:
             for ent_id in range(self.n_entity):
                 X.append(self.pick_ent(ent_id).tolist() + x_list)
+        elif task_type == 0:
+            X.append(x_list+y.tolist())
         y_prob = self.lr.predict_proba(X)
+        if task_type == 0:
+            return np.array(y_prob[0])
         y_idx = -1
         for i in range(len(self.lr.classes_)):
             if self.lr.classes_[i] == y:
                 y_idx = i
                 break
-        return np.array(y_prob)[:,y_idx]
+        res = np.array(y_prob)[:,y_idx]
+        print('len:{},dist:{}'.format(len(res), res))
+        return res
 
     # train data construction: one-vs-rest; one-vs-one with negative sampling
     # feature combination: stacking

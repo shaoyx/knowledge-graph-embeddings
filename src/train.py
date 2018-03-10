@@ -1,6 +1,7 @@
 
 import argparse
 from datetime import datetime
+from time import time
 import logging
 import numpy as np
 import os
@@ -131,7 +132,7 @@ def train(args):
         starttime = time() 
         model.train()
         endtime = time()
-        logger.info("lr model train time {.6f}".format(endtime - starttime))
+        logger.info("lr model train time {:.6f}".format(endtime - starttime))
         model.save_model(os.path.join(args.log, model.__class__.__name__))
         return
     else:
