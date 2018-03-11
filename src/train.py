@@ -129,8 +129,12 @@ def train(args):
                                   dim=args.dim,
                                   output=args.log,
                                   wv_model_path=args.wv_model)
-        starttime = time() 
-        model.train()
+        starttime = time()
+        if args.mode == "triplet_cls":
+            logger.info("Training a triple classifer")
+            model.train_triple_classifer()
+        else:
+            model.train()
         endtime = time()
         logger.info("lr model train time {:.6f}".format(endtime - starttime))
         model.save_model(os.path.join(args.log, model.__class__.__name__))
@@ -163,7 +167,7 @@ def train(args):
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser('Link prediction models')
-    p.add_argument('--mode', default='single', type=str, help='training mode ["pairwise", "single"]')
+    p.add_argument('--mode', default='single', type=str, help='training mode ["pairwise", "single", "triplet_cls"]')
 
     # dataset
     p.add_argument('--ent', type=str, help='entity list')
@@ -172,7 +176,7 @@ if __name__ == '__main__':
     p.add_argument('--valid', type=str, help='validation data')
 
     # model
-    p.add_argument('--method', default='complex', type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy", "randwalk"]')
+    p.add_argument('--method', default='complex', type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy", "randwalk","lr"]')
     p.add_argument('--epoch', default=100, type=int, help='number of epochs')
     p.add_argument('--batch', default=128, type=int, help='batch size')
     p.add_argument('--lr', default=0.001, type=float, help='learning rate')

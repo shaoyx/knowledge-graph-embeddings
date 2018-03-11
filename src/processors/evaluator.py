@@ -47,6 +47,7 @@ class Evaluator(object):
         n_corr_h10_raw = 0
         n_corr_h10_flt = 0
         start_id = 0
+        correct_triple = 0
         for samples in dataset.batch_iter(self.batchsize, rand_flg=False):
             subs, rels, objs = samples[:, 0], samples[:, 1], samples[:, 2]
             ids = np.arange(start_id, start_id+len(samples))
@@ -56,10 +57,13 @@ class Evaluator(object):
             rel_raw_ranks = self.cal_rank(rel_raw_scores, rels)
             # for idx in range(len(rels)):
             #     print('id:{}, prob:{:.6f}, rank:{}'.format(rels[idx],rel_raw_scores[idx][rels[idx]],rel_raw_ranks[idx]))
-            sum_rr_raw += sum(float(1/rank) for rank in raw_ranks) * 2
-            n_corr_h1_raw += sum(1 for rank in raw_ranks if rank <= 1) * 2
-            n_corr_h3_raw += sum(1 for rank in raw_ranks if rank <= 3) * 2
-            n_corr_h10_raw += sum(1 for rank in raw_ranks if rank <= 10) * 2
+            sum_rr_raw += sum(float(1/rank) for rank in rel_raw_ranks) * 2
+            n_corr_h1_raw += sum(1 for rank in rel_raw_ranks if rank <= 1) * 2
+            n_corr_h3_raw += sum(1 for rank in rel_raw_ranks if rank <= 3) * 2
+            n_corr_h10_raw += sum(1 for rank in rel_raw_ranks if rank <= 10) * 2
+
+            if model.__class__.__name__ == "LogisticReg" and model.cls_type == "triplet_clssifer":
+                correct_triple += model.check_triple(subs, objs, rels)
 
             # # TODO: methods for deep analyze
             # # model.analyze(knowledge_base, subs, rels, objs)
@@ -103,6 +107,7 @@ class Evaluator(object):
 
             start_id += len(samples)
 
+        print("Triple precision: {:.6f}".format(correct_triple * 1.0 / n_sample))
         return {'MRR': sum_rr_raw/n_sample/2,
                 'Hits@1': n_corr_h1_raw/n_sample/2,
                 'Hits@3': n_corr_h3_raw/n_sample/2,
@@ -180,6 +185,8 @@ class Evaluator(object):
         return new_scores
 
     def cal_rank(self, score_mat, ents):
+        # print(score_mat)
+        # print(ents)
         return [np.sum(score >= score[e]) for score, e in zip(score_mat, ents)]
 
     def get_best_info(self):
