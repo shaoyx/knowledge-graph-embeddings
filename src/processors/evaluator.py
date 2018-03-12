@@ -46,6 +46,12 @@ class Evaluator(object):
         n_corr_h3_flt = 0
         n_corr_h10_raw = 0
         n_corr_h10_flt = 0
+        r_corr_h1_raw = 0
+        r_corr_h1_flt = 0
+        r_corr_h3_raw = 0
+        r_corr_h3_flt = 0
+        r_corr_h10_raw = 0
+        r_corr_h10_flt = 0
         start_id = 0
         correct_triple = 0
         for samples in dataset.batch_iter(self.batchsize, rand_flg=False):
@@ -57,57 +63,56 @@ class Evaluator(object):
             rel_raw_ranks = self.cal_rank(rel_raw_scores, rels)
             # for idx in range(len(rels)):
             #     print('id:{}, prob:{:.6f}, rank:{}'.format(rels[idx],rel_raw_scores[idx][rels[idx]],rel_raw_ranks[idx]))
-            sum_rr_raw += sum(float(1/rank) for rank in rel_raw_ranks) * 2
-            n_corr_h1_raw += sum(1 for rank in rel_raw_ranks if rank <= 1) * 2
-            n_corr_h3_raw += sum(1 for rank in rel_raw_ranks if rank <= 3) * 2
-            n_corr_h10_raw += sum(1 for rank in rel_raw_ranks if rank <= 10) * 2
+            r_sum_rr_raw += sum(float(1/rank) for rank in rel_raw_ranks)
+            r_corr_h1_raw += sum(1 for rank in rel_raw_ranks if rank <= 1)
+            r_corr_h3_raw += sum(1 for rank in rel_raw_ranks if rank <= 3)
+            r_corr_h10_raw += sum(1 for rank in rel_raw_ranks if rank <= 10)
 
             if model.__class__.__name__ == "LogisticReg" and model.cls_type == "triplet_clssifer":
                 correct_triple += model.check_triple(subs, objs, rels)
 
-            # # TODO: methods for deep analyze
-            # # model.analyze(knowledge_base, subs, rels, objs)
+            # TODO: methods for deep analyze
+            # model.analyze(knowledge_base, subs, rels, objs)
 
-            # # TODO: partitioned calculation
-            # # search objects
-            # raw_scores = model.cal_scores(subs, rels)
-            # raw_ranks = self.cal_rank(raw_scores, objs)
+            # TODO: partitioned calculation
+            # search objects
+            raw_scores = model.cal_scores(subs, rels)
+            raw_ranks = self.cal_rank(raw_scores, objs)
             # for idx in range(len(objs)):
             #     print('id:{}, prob:{:.6f}, rank:{}'.format(objs[idx],raw_scores[idx][objs[idx]],raw_ranks[idx]))
-            # sum_rr_raw += sum(float(1/rank) for rank in raw_ranks)
-            # n_corr_h1_raw += sum(1 for rank in raw_ranks if rank <= 1)
-            # n_corr_h3_raw += sum(1 for rank in raw_ranks if rank <= 3)
-            # n_corr_h10_raw += sum(1 for rank in raw_ranks if rank <= 10)
-            # # filter
-            # if self.filtered:
-            #     flt_scores = self.cal_filtered_score_fast(subs, rels, objs, ids, raw_scores)
-            #     flt_ranks = self.cal_rank(flt_scores, objs)
-            #     sum_rr_flt += sum(float(1/rank) for rank in flt_ranks)
-            #     n_corr_h1_flt += sum(1 for rank in flt_ranks if rank <=1)
-            #     n_corr_h3_flt += sum(1 for rank in flt_ranks if rank <=3)
-            #     n_corr_h10_flt += sum(1 for rank in flt_ranks if rank <=10)
+            sum_rr_raw += sum(float(1/rank) for rank in raw_ranks)
+            n_corr_h1_raw += sum(1 for rank in raw_ranks if rank <= 1)
+            n_corr_h3_raw += sum(1 for rank in raw_ranks if rank <= 3)
+            n_corr_h10_raw += sum(1 for rank in raw_ranks if rank <= 10)
+            # filter
+            if self.filtered:
+                flt_scores = self.cal_filtered_score_fast(subs, rels, objs, ids, raw_scores)
+                flt_ranks = self.cal_rank(flt_scores, objs)
+                sum_rr_flt += sum(float(1/rank) for rank in flt_ranks)
+                n_corr_h1_flt += sum(1 for rank in flt_ranks if rank <=1)
+                n_corr_h3_flt += sum(1 for rank in flt_ranks if rank <=3)
+                n_corr_h10_flt += sum(1 for rank in flt_ranks if rank <=10)
 
-            # # search subjects
-            # raw_scores_inv = model.cal_scores_inv(rels, objs)
-            # raw_ranks_inv = self.cal_rank(raw_scores_inv, subs)
+            # search subjects
+            raw_scores_inv = model.cal_scores_inv(rels, objs)
+            raw_ranks_inv = self.cal_rank(raw_scores_inv, subs)
             # for idx in range(len(objs)):
             #     print('id:{}, prob:{:.6f}, rank:{}'.format(objs[idx],raw_scores_inv[idx][objs[idx]], raw_ranks_inv[idx]))
-            # sum_rr_raw += sum(float(1/rank) for rank in raw_ranks_inv)
-            # n_corr_h1_raw += sum(1 for rank in raw_ranks_inv if rank <= 1)
-            # n_corr_h3_raw += sum(1 for rank in raw_ranks_inv if rank <= 3)
-            # n_corr_h10_raw += sum(1 for rank in raw_ranks_inv if rank <= 10)
-            # # filter
-            # if self.filtered:
-            #     flt_scores_inv = self.cal_filtered_score_inv_fast(subs, rels, objs, ids, raw_scores_inv)
-            #     flt_ranks_inv = self.cal_rank(flt_scores_inv, subs)
-            #     sum_rr_flt += sum(float(1/rank) for rank in flt_ranks_inv)
-            #     n_corr_h1_flt += sum(1 for rank in flt_ranks_inv if rank <= 1)
-            #     n_corr_h3_flt += sum(1 for rank in flt_ranks_inv if rank <= 3)
-            #     n_corr_h10_flt += sum(1 for rank in flt_ranks_inv if rank <= 10)
+            sum_rr_raw += sum(float(1/rank) for rank in raw_ranks_inv)
+            n_corr_h1_raw += sum(1 for rank in raw_ranks_inv if rank <= 1)
+            n_corr_h3_raw += sum(1 for rank in raw_ranks_inv if rank <= 3)
+            n_corr_h10_raw += sum(1 for rank in raw_ranks_inv if rank <= 10)
+            # filter
+            if self.filtered:
+                flt_scores_inv = self.cal_filtered_score_inv_fast(subs, rels, objs, ids, raw_scores_inv)
+                flt_ranks_inv = self.cal_rank(flt_scores_inv, subs)
+                sum_rr_flt += sum(float(1/rank) for rank in flt_ranks_inv)
+                n_corr_h1_flt += sum(1 for rank in flt_ranks_inv if rank <= 1)
+                n_corr_h3_flt += sum(1 for rank in flt_ranks_inv if rank <= 3)
+                n_corr_h10_flt += sum(1 for rank in flt_ranks_inv if rank <= 10)
 
             start_id += len(samples)
 
-        print("Triple precision: {:.6f}".format(correct_triple * 1.0 / n_sample))
         return {'MRR': sum_rr_raw/n_sample/2,
                 'Hits@1': n_corr_h1_raw/n_sample/2,
                 'Hits@3': n_corr_h3_raw/n_sample/2,
@@ -115,7 +120,12 @@ class Evaluator(object):
                 'MRR(filter)': sum_rr_flt/n_sample/2,
                 'Hits@1(filter)': n_corr_h1_flt/n_sample/2,
                 'Hits@3(filter)': n_corr_h3_flt/n_sample/2,
-                'Hits@10(filter)': n_corr_h10_flt/n_sample/2}
+                'Hits@10(filter)': n_corr_h10_flt/n_sample/2,
+                'R_MRR': r_sum_rr_raw/n_sample,
+                'R_Hits@1': r_corr_h1_raw/n_sample,
+                'R_Hits@3': r_corr_h3_raw/n_sample,
+                'R_Hits@10': r_corr_h10_raw/n_sample,
+                'Triple prec': correct_triple*1.0/n_sample}
 
     def cal_mrr(self, model, dataset):
         n_sample = len(dataset)

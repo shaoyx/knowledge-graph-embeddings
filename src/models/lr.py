@@ -17,11 +17,14 @@ class LogisticReg(BaseModel):
 
         self.output = kwargs.pop('output')
 
+        # external learned embedding, e.g., deepwalk
         self.wv = KeyedVectors.load_word2vec_format(kwargs.pop('wv_model_path'), binary=False)
         self.empty_wv = np.array([0.0 for i in range(self.dim)])
 
         self.lr = LogisticRegression(verbose=1)
         self.cls_type = ""
+        self.feat_type = kwargs.pop('feat_type')
+        self.negative = kwargs.pop('negative')
 
     def cal_rank(self, **kwargs):
         raise NotImplementedError
@@ -57,7 +60,7 @@ class LogisticReg(BaseModel):
         
         score_mat = np.empty((_batchsize, self.n_entity))
         for i in range(_batchsize):
-            score_mat[i] = self.predict(self.pick_ent(subs[i]), rels[i], 1)
+            score_mat[i] = self.predict(subs[i], rels[i], None)
         return score_mat
     
     def cal_rel_scores(self, subs, objs):
@@ -65,7 +68,7 @@ class LogisticReg(BaseModel):
         
         score_mat = np.empty((_batchsize, self.n_relation))
         for i in range(_batchsize):
-            score_mat[i] = self.predict(self.pick_ent(subs[i]), self.pick_ent(objs[i]), 0)
+            score_mat[i] = self.predict(subs[i], None, objs[i])
         return score_mat
 
     def cal_scores_inv(self, rels, objs):
@@ -74,51 +77,84 @@ class LogisticReg(BaseModel):
         # NOTE: in this way, we do not consider the direction of an edge.
         score_mat = np.empty((_batchsize, self.n_entity))
         for i in range(_batchsize):
-            score_mat[i] = self.predict(self.pick_ent(objs[i]), rels[i], -1)
+            score_mat[i] = self.predict(None, rels[i], objs[i])
         return score_mat
 
     def cal_triplet_scores(self, **kwargs):
         raise NotImplementedError
 
+    # computing feature
+    # task_type = 1: link prediction
+    # task_type = 0: triple classification
+    def compute_feature(self, subs, rels, objs, task_type):
+        if task_type == 1:
+            if self.feat_type == "concate":
+                return subs.tolist() + objs.tolist()
+            else: # translation model
+                return (subs-objs).tolist()
+        elif task_type == 0:
+            if self.feat_type == "concate":
+                return subs.tolist() + rels.tolist() + objs.tolist()
+            else: # translation model
+                return (subs + rels - objs).tolist()
+
     # task_type = 1 : (h,r,?)
     # task_type = -1: (?,r,t)
-    def predict(self, x, y, task_type):
+    def predict(self, subs, rels, objs):
         if self.cls_type == "triplet_clssifer":
-            return self.predict_triple(x,y,task_type)
+            return self.binary_predictor(subs, rels, objs)
+        else:
+            return self.multi_predictor(subs, rels, objs)
+
+    def multi_predictor(self, subs, rels, objs):
         X = []
-        x_list = x.tolist() 
-        if task_type == 1:
+        if objs == None:
+            sub_emb = self.pick_ent(subs)
             for ent_id in range(self.n_entity):
-                X.append(x_list + self.pick_ent(ent_id).tolist())
-        elif task_type == -1:
+                obj_emb = self.pick_ent(ent_id)
+                X.append(self.compute_feature(sub_emb, None, obj_emb, 1))
+        elif subs == None:
+            obj_emb = self.pick_ent(objs)
             for ent_id in range(self.n_entity):
-                X.append(self.pick_ent(ent_id).tolist() + x_list)
-        elif task_type == 0:
-            X.append(x_list+y.tolist())
+                sub_emb = self.pick_ent(ent_id)
+                X.append(self.compute_feature(sub_emb, None, obj_emb, 1))
+        elif rels == None:
+            sub_emb = self.pick_ent(subs)
+            obj_emb = self.pick_ent(objs)
+            X.append(self.compute_feature(sub_emb, None, obj_emb, 1))
+
         y_prob = self.lr.predict_proba(X)
-        if task_type == 0:
+        if rels == None:
             return np.array(y_prob[0])
         y_idx = -1
         for i in range(len(self.lr.classes_)):
-            if self.lr.classes_[i] == y:
+            if self.lr.classes_[i] == rels:
                 y_idx = i
                 break
         res = np.array(y_prob)[:,y_idx]
         # print('len:{},dist:{}'.format(len(res), res))
         return res
 
-    def predict_triple(self, x, y, task_type):
+    def binary_predictor(self, subs, rels, objs):
         X = []
-        x_list = x.tolist() 
-        if task_type == 1:
+        if objs == None:
+            sub_emb = self.pick_ent(subs)
+            rel_emb = self.pick_rel(rels)
             for ent_id in range(self.n_entity):
-                X.append(x_list + self.pick_rel(y+self.n_entity).tolist() + self.pick_ent(ent_id).tolist())
-        elif task_type == -1:
+                obj_emb = self.pick_ent(ent_id)
+                X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
+        elif subs == None:
+            obj_emb = self.pick_ent(objs)
+            rel_emb = self.pick_rel(rels)
             for ent_id in range(self.n_entity):
-                X.append(self.pick_ent(ent_id).tolist() + self.pick_rel(y+self.n_entity).tolist()+x_list)
-        elif task_type == 0:
+                sub_emb = self.pick_ent(ent_id)
+                X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
+        elif rels == None:
+            sub_emb = self.pick_ent(subs)
+            obj_emb = self.pick_rel(objs)
             for rel_id in range(self.n_relation):
-                X.append(x_list + self.pick_rel(rel_id+self.n_entity).tolist() +y.tolist())
+                rel_emb = self.pick_rel(rel_id)
+                X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
         y_prob = self.lr.predict_proba(X)
         y_idx = -1
         for i in range(len(self.lr.classes_)):
@@ -126,7 +162,7 @@ class LogisticReg(BaseModel):
                 y_idx = i
                 break
         res = np.array(y_prob)[:, self.lr.classes_[y_idx]] 
-        # print('len:{}, dist:{}'.format(len(res), res)) # TODO: why all positive value is less than 0.5?
+        # print('len:{}, dist:{}'.format(len(res), res))
         return res
 
     def check_triple(self, subs, rels, objs):
@@ -153,7 +189,9 @@ class LogisticReg(BaseModel):
                 obj_id = self.ent_vocab[obj]
 
                 # one-vs-rest
-                X.append(self.pick_ent(sub_id).tolist() + self.pick_ent(obj_id).tolist())
+                sub_emb = self.pick_ent(sub_id)
+                obj_emb = self.pick_ent(obj_id)
+                X.append(self.compute_feature(sub_emb, None, obj_emb, 1))
                 y.append(rel_id)
 
         # using the default configurations to predict relation.
@@ -164,7 +202,7 @@ class LogisticReg(BaseModel):
         self.cls_type = "triplet_clssifer"
         X = []
         y = []
-        generator = UniformNegativeGenerator(self.n_entity, 10)
+        generator = UniformNegativeGenerator(self.n_entity, self.negative) 
         pos_triplets = [] 
         with open(self.train_path) as f:
             for line in f:
@@ -175,7 +213,10 @@ class LogisticReg(BaseModel):
                 pos_triplets.append((sub_id, rel_id, obj_id))
 
                 # postive example
-                X.append(self.pick_ent(sub_id).tolist() + self.pick_rel(rel_id + self.n_entity).tolist() + self.pick_ent(obj_id).tolist())
+                sub_emb = self.pick_ent(sub_id)
+                rel_emb = self.pick_rel(rel_id)
+                obj_emb = self.pick_ent(obj_id)
+                X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
                 y.append(1)
 
         # negative example
@@ -184,14 +225,18 @@ class LogisticReg(BaseModel):
             sub_id = neg[0]
             rel_id = neg[1]
             obj_id = neg[2]
-
-            X.append(self.pick_ent(sub_id).tolist() + self.pick_rel(rel_id + self.n_entity).tolist() + self.pick_ent(obj_id).tolist())
+            
+            sub_emb = self.pick_ent(sub_id)
+            rel_emb = self.pick_rel(rel_id)
+            obj_emb = self.pick_ent(obj_id)
+            X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
             y.append(-1)
 
         # using the default configurations to predict relation.
         # LR model can only solve the link prediction.
         self.lr.fit(X,y)
 
+# sampling negative samples
 class NegativeGenerator(object):
     def __init__(self, n_ent, n_negative, train_graph=None):
         self.n_ent = n_ent
@@ -205,7 +250,6 @@ class NegativeGenerator(object):
         :return: neg_triplets, whose size is (length of positives \times n_sample , 3)
         """
         raise NotImplementedError
-
 
 class UniformNegativeGenerator(NegativeGenerator):
     def __init__(self, n_ent, n_negative, train_graph=None):

@@ -128,7 +128,9 @@ def train(args):
                                   rel_vocab=rel_vocab,
                                   dim=args.dim,
                                   output=args.log,
-                                  wv_model_path=args.wv_model)
+                                  wv_model_path=args.wv_model,
+                                  negative = args.negative,
+                                  feat_type=args.feat_type)
         starttime = time()
         if args.mode == "triplet_cls":
             logger.info("Training a triple classifer")
@@ -197,6 +199,8 @@ if __name__ == '__main__':
     p.add_argument('--filtered', action='store_true', help='use filtered metric')
     p.add_argument('--graphall', type=str, help='all graph file for filtered evaluation')
     p.add_argument('--wv-model', type=str, help='trained embedding with word2vec model')
+    p.add_argument('--feat-type', default="concate", type=str, help='feature combination type for lr model')
+
     # others
     p.add_argument('--log', default=DEFAULT_LOG_DIR, type=str, help='output log dir')
 
