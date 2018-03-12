@@ -69,6 +69,7 @@ if __name__ == '__main__':
     p.add_argument('--method', default=None, type=str, help='method ["complex", "distmult", "transe", "hole", "rescal", "analogy"]')
     p.add_argument('--model', type=str, help='trained model path')
     p.add_argument('--wv-model', type=str, help='trained embedding with word2vec model')
+    p.add_argument('--feat-type', default="concate", type=str, help='feature combination type for lr model')
 
     args = p.parse_args()
     test(args)
