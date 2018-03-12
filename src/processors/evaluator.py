@@ -71,6 +71,7 @@ class Evaluator(object):
 
             if model.__class__.__name__ == "LogisticReg" and model.cls_type == "triplet_clssifer":
                 correct_triple += model.check_triple(subs, objs, rels)
+                continue
 
             # TODO: methods for deep analyze
             # model.analyze(knowledge_base, subs, rels, objs)

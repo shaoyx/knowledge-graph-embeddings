@@ -169,7 +169,10 @@ class LogisticReg(BaseModel):
         s = len(subs)
         X = []
         for idx in range(s):
-            X.append(self.pick_ent(subs[idx]).tolist() + self.pick_rel(rels[idx]+self.n_entity).tolist() + self.pick_ent(objs[idx]).tolist())
+            sub_emb = self.pick_ent(subs[idx])
+            rel_emb = self.pick_rel(rels[idx])
+            obj_emb = self.pick_ent(objs[idx)
+            X.append(self.compute_feature(sub_emb, rel_emb, obj_emb))
         y = np.array(self.lr.predict(X))
         res = np.sum(y == 1)
         return res
