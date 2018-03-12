@@ -172,7 +172,7 @@ class LogisticReg(BaseModel):
             sub_emb = self.pick_ent(subs[idx])
             rel_emb = self.pick_rel(rels[idx])
             obj_emb = self.pick_ent(objs[idx])
-            X.append(self.compute_feature(sub_emb, rel_emb, obj_emb))
+            X.append(self.compute_feature(sub_emb, rel_emb, obj_emb, 0))
         y = np.array(self.lr.predict(X))
         res = np.sum(y == 1)
         return res
