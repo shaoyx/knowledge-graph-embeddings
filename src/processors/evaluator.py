@@ -46,6 +46,7 @@ class Evaluator(object):
         n_corr_h3_flt = 0
         n_corr_h10_raw = 0
         n_corr_h10_flt = 0
+        r_sum_rr_raw = 0.
         r_corr_h1_raw = 0
         r_corr_h1_flt = 0
         r_corr_h3_raw = 0
