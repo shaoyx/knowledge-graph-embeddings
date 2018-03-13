@@ -20,7 +20,7 @@ def inspect(args):
     X, y = read_data(args.data, args.model)
     if args.source == "WN18" and args.model == "deepwalk":
         y = y >= 40943 # label 1 for relation, label 0 for entity.
-    TwoDimProjection(X, y).visualize()
+    TwoDimProjection(X, y, args.source).visualize()
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser('Inspector for data analysis')
