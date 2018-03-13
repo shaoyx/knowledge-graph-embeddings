@@ -30,4 +30,4 @@ class TwoDimProjection(BasicVisualizer):
 
     def visualize(self):
         X_emb = TSNE().fit_transform(self.X)
-        self.scatter_plot(proj, self.y)
+        self.scatter_plot(X_emb, self.y)
