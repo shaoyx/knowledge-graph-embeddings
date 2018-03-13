@@ -1,6 +1,8 @@
 from sklearn.manifold import TSNE
 
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 
 class BasicVisualizer(object):
     def __init__(self, data, label, name_):
@@ -12,11 +14,11 @@ class BasicVisualizer(object):
         raise NotImplementedError
 
     # simple scatter plot
-    def scatter_plot(self, X, y, flag="save"):
+    def scatter_plot(self, X, y, s=0, flag="save"):
         x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
         y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
 
-        plt.scatter(X[:, 0], X[:, 1], c=y)
+        plt.scatter(X[:, 0], X[:, 1], c=y, alpha=0.6)
         if flag == "save":
             plt.savefig(fname=self.name+".pdf")
         else:
