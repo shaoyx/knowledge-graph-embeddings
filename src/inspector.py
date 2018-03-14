@@ -80,6 +80,8 @@ def inspect(args):
         # print("End")
         for i in range(s):
             for j in range(i+1, s):
+                if i != 12 or j != 16:
+                    continue
                 # print(part_X[i].shape)
                 # print(part_X[j].shape)
                 a = np.vstack((part_X[i], part_X[j]))

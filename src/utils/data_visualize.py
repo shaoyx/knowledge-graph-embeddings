@@ -29,5 +29,5 @@ class TwoDimProjection(BasicVisualizer):
         super(TwoDimProjection, self).__init__(data, label, name)
 
     def visualize(self):
-        X_emb = TSNE().fit_transform(self.X)
+        X_emb = TSNE(perplexity=100, n_iter=5000).fit_transform(self.X)
         self.scatter_plot(X_emb, self.y)
