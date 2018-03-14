@@ -15,6 +15,20 @@ def read_data(path, data_type, args):
             vector = word_vector[word]
             X.append(vector)
             y.append(int(word))
+    if data_type == "transe":
+        from models.transe import TransE as Model
+        model = Model.load_model(path)
+        ent_vocab = Vocab.load(args.ent)
+        rel_vocab = Vocab.load(args.rel)
+        
+        with open(args.kb) as f:
+            for line in f:
+                sub, rel, obj = line.strip().split('\t')
+                sub_emb = model.pick_ent(ent_vocab[sub])
+                obj_emb = model.pick_ent(ent_vocab[obj])
+                rel_id = rel_vocab[rel]
+                X.append(sub_emb-obj_emb)
+                y.append(rel_id)
     else:
         word_vector = KeyedVectors.load_word2vec_format(path, binary=False)
         ent_vocab = Vocab.load(args.ent)
